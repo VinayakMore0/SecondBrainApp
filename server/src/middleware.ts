@@ -16,7 +16,9 @@ export const middleware = (req: Request, res: Response, next: NextFunction) => {
     return res.status(403).json({ message: "You are not signed in" });
   }
 
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : authHeader;
+  const token = authHeader.startsWith("Bearer ")
+    ? authHeader.slice(7)
+    : authHeader;
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload | string;
@@ -30,5 +32,3 @@ export const middleware = (req: Request, res: Response, next: NextFunction) => {
     return res.status(403).json({ message: "Invalid token" });
   }
 };
-
-
