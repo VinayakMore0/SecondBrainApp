@@ -7,9 +7,10 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import z from "zod";
 import cors from "cors";
-import { Tag, Content, User } from "./db.js";
+import { Tag, Content, User, Link } from "./db.js";
 import { JWT_SECRET } from "./config.js";
 import { middleware } from "./middleware.js";
+import { random } from "./utils.js";
 
 const app = express();
 app.use(express.json());
@@ -146,7 +147,7 @@ app.post("/api/v1/content", middleware, async (req, res) => {
       });
 
       const tagMap = new Map<string, Types.ObjectId>(
-        existingTags.map((tag) => [tag.title, tag._id])
+        existingTags.map((tag) => [tag.title, tag._id]),
       );
 
       const newTags = normalizedTags
@@ -210,9 +211,75 @@ app.delete("/api/v1/content", middleware, async (req, res) => {
   res.json({ ok: true });
 });
 
-// app.post("/api/v1/brain/share", middleware, async (req, res) => {});
+app.post("/api/v1/brain/share", middleware, async (req, res) => {
+  const share = req.body.share;
 
-// app.get("/api/v1/brain/:shareLink", async (req, res) => {});
+  if (share) {
+    const existingLink = await Link.findOne({
+      userId: new Types.ObjectId(req.userId),
+    });
+
+    if(existingLink) {
+      res.json({hash: existingLink.hash})
+      return
+    }
+
+    const hash = random(10);
+    await Link.create({
+      userId: new Types.ObjectId(req.userId),
+      hash,
+    });
+
+    res.json({
+      message: "/share/" + hash
+    })
+
+  } else {
+    await Link.deleteOne({
+      userId: new Types.ObjectId(req.userId),
+    });
+    res.json({ message: "Removed link"})
+  }
+
+  res.json({
+    message: "Updated sharable link",
+  });
+});
+
+app.get("/api/v1/brain/:shareLink", async (req, res) => {
+  const hash = req.params.shareLink;
+
+  const link = await Link.findOne({
+    hash
+  });
+
+  if(!link) {
+    res.status(404).json({
+      message: "Invalid share link"
+    })
+    return;
+  }
+
+  const content = await Content.find({
+    userId: link.userId
+  })
+  const user = await User.findOne({
+    _id: link.userId
+  })
+
+  if (!user) {
+    res.status(411).json({
+      message: "user not found, error should ideally not happen"
+    })
+    return;
+  }
+
+  res.json({
+    username: user?.username,
+    content: content
+  })
+
+});
 
 async function main() {
   const mongoUrl = process.env.MONGO_URL;
@@ -228,7 +295,7 @@ async function main() {
   }
 
   app.listen(3000, () =>
-    console.log("Listening on port http://localhost:3000/")
+    console.log("Listening on port http://localhost:3000/"),
   );
 }
 
