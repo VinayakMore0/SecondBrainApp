@@ -219,9 +219,9 @@ app.post("/api/v1/brain/share", middleware, async (req, res) => {
       userId: new Types.ObjectId(req.userId),
     });
 
-    if(existingLink) {
-      res.json({hash: existingLink.hash})
-      return
+    if (existingLink) {
+      res.json({ hash: existingLink.hash });
+      return;
     }
 
     const hash = random(10);
@@ -231,14 +231,13 @@ app.post("/api/v1/brain/share", middleware, async (req, res) => {
     });
 
     res.json({
-      message: "/share/" + hash
-    })
-
+      message: "/share/" + hash,
+    });
   } else {
     await Link.deleteOne({
       userId: new Types.ObjectId(req.userId),
     });
-    res.json({ message: "Removed link"})
+    res.json({ message: "Removed link" });
   }
 
   res.json({
@@ -250,35 +249,34 @@ app.get("/api/v1/brain/:shareLink", async (req, res) => {
   const hash = req.params.shareLink;
 
   const link = await Link.findOne({
-    hash
+    hash,
   });
 
-  if(!link) {
+  if (!link) {
     res.status(404).json({
-      message: "Invalid share link"
-    })
+      message: "Invalid share link",
+    });
     return;
   }
 
   const content = await Content.find({
-    userId: link.userId
-  })
+    userId: link.userId,
+  });
   const user = await User.findOne({
-    _id: link.userId
-  })
+    _id: link.userId,
+  });
 
   if (!user) {
     res.status(411).json({
-      message: "user not found, error should ideally not happen"
-    })
+      message: "user not found, error should ideally not happen",
+    });
     return;
   }
 
   res.json({
     username: user?.username,
-    content: content
-  })
-
+    content: content,
+  });
 });
 
 async function main() {
